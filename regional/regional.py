@@ -1,4 +1,4 @@
-from numpy import asarray, amin, amax, sqrt, concatenate, \
+from numpy import asarray, amin, amax, sqrt, concatenate, stack, \
     mean, ndarray, sum, all, ones, tile, expand_dims, zeros, where, integer
 import checkist
 
@@ -41,7 +41,7 @@ class one(object):
         """
         mn = amin(self.coordinates, axis=0)
         mx = amax(self.coordinates, axis=0)
-        return concatenate((mn, mx))
+        return stack((mn, mx), axis=1)
 
     @property
     def area(self):
@@ -55,7 +55,8 @@ class one(object):
         """
         Total region extent.
         """
-        return self.bbox[2:] - self.bbox[0:2] + 1
+
+        return self.bbox[:,1] - self.bbox[:,0] + 1
     
     def distance(self, other):
         """
@@ -163,10 +164,10 @@ class one(object):
             size = (size * 2) + 1
             coords = self.coordinates
             tmp = zeros(self.extent + size * 2)
-            coords = (coords - self.bbox[0:len(self.center)] + size)
+            coords = (coords - self.bbox[:,0] + size)
             tmp[coords.T.tolist()] = 1
             tmp = binary_dilation(tmp, ones((size, size)))
-            new = asarray(where(tmp)).T + self.bbox[0:len(self.center)] - size
+            new = asarray(where(tmp)).T + self.bbox[:,0] - size
             new = [c for c in new if all(c >= 0)]
         else:
             return self
@@ -240,7 +241,7 @@ class one(object):
         background = getcolor(background)
 
         if dims is None and base is None:
-            region = one(self.coordinates - self.bbox[0:2])
+            region = one(self.coordinates - self.bbox[:,0])
         else:
             region = self
 
@@ -407,8 +408,8 @@ class many(object):
         stroke = getcolors(stroke, self.count)
         fill = getcolors(fill, self.count, cmap, value)
 
-        minbound = asarray([b[0:2] for b in self.bbox]).min(axis=0)
-        maxbound = asarray([b[2:] for b in self.bbox]).max(axis=0)
+        minbound = asarray([b[:,0] for b in self.bbox]).min(axis=0)
+        maxbound = asarray([b[:,1] for b in self.bbox]).max(axis=0)
         extent = maxbound - minbound + 1
 
         if dims is None and base is None:
