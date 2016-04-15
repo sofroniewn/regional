@@ -166,7 +166,7 @@ class one(object):
             tmp = zeros(self.extent + size * 2)
             coords = (coords - self.bbox[:,0] + size)
             tmp[coords.T.tolist()] = 1
-            tmp = binary_dilation(tmp, ones((size, size)))
+            tmp = binary_dilation(tmp, ones(tile(size,len(self.center))))
             new = asarray(where(tmp)).T + self.bbox[:,0] - size
             new = [c for c in new if all(c >= 0)]
         else:
@@ -249,17 +249,17 @@ class one(object):
 
         if fill is not None:
             for channel in range(3):
-                inds = asarray([[c[0], c[1], channel] for c in region.coordinates])
+                inds = asarray([concatenate((c, [channel])) for c in region.coordinates])
                 base[inds.T.tolist()] = fill[channel]
 
         if stroke is not None:
-            mn = [0, 0]
-            mx = [base.shape[0], base.shape[1]]
+            mn = zeros(len(self.center))
+            mx = base.shape[:-1]
             edge = region.outline(0, 1).coordinates
             edge = [e for e in edge if all(e >= mn) and all(e < mx)]
             if len(edge) > 0:
                 for channel in range(3):
-                    inds = asarray([[c[0], c[1], channel] for c in edge])
+                    inds = asarray([concatenate((c, [channel])) for c in edge])
                     base[inds.T.tolist()] = stroke[channel]
 
         return base
@@ -471,6 +471,7 @@ def getbase(base=None, dims=None, extent=None, background=None):
     """
     Construct a base array from optional arguments.
     """
+
     if dims is not None:
         extent = dims
     if base is None and background is None:
@@ -478,9 +479,9 @@ def getbase(base=None, dims=None, extent=None, background=None):
     elif base is None and background is not None:
         base = zeros(tuple(extent) + (3,))
         for channel in range(3):
-            base[:, :, channel] = background[channel]
+            base[[slice(0,i) for i in base.shape[0:-1]] + [channel]] = background[channel]
         return base
-    elif base is not None and base.ndim < 3:
-        return tile(expand_dims(base, 2),[1, 1, 3])
+    elif base is not None and (base.ndim < 3 or not (base.shape[-1] == 3 or base.shape[-1] == 4)):
+        return tile(expand_dims(base, base.ndim), concatenate((ones(base.ndim, dtype=int), [3])))
     else:
         return base
