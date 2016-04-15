@@ -481,7 +481,7 @@ def getbase(base=None, dims=None, extent=None, background=None):
         for channel in range(3):
             base[[slice(0,i) for i in base.shape[0:-1]] + [channel]] = background[channel]
         return base
-    elif base is not None and (base.ndim < 3 or not (base.shape[-1] == 3 or base.shape[-1] == 4)):
+    elif base is not None and (base.ndim < 3 or not base.shape[-1] == 3):
         return tile(expand_dims(base, base.ndim), concatenate((ones(base.ndim, dtype=int), [3])))
     else:
         return base
